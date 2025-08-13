@@ -1,0 +1,19 @@
+{
+  "name": "@nurseconnect-v2/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "firebase": "^12.1.0",
+    "typescript": "^5.4.0"
+  }
+}

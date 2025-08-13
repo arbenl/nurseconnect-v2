@@ -1,0 +1,55 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs
+.next
+dist
+build
+
+# Vercel
+.vercel
+
+# Local Environment Variables - DO NOT COMMIT REAL SECRETS
+.env*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Test outputs
+coverage
+.nyc_output
+playwright-report/
+test-results/
+
+# Editor
+.vscode/
+
+nurseconnect_ecosystem/
+nurseconnect_ecosystem_backup/
+nurseconnect_ecosystem_git/
+# node/next
+node_modules/
+.next/
+out/
+pnpm-debug.log*
+
+# IDE
+.vscode/
+.DS_Store
+
+# firebase emulator cache (optional)
+.firebase/
+
+# embedded repos (keep on disk but don't track)
+nurseconnect_ecosystem/
+nurseconnect_ecosystem_backup/
+nurseconnect_ecosystem_git/

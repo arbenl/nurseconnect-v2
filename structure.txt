@@ -1,0 +1,87 @@
+nurseconnect-v2/
+├─── .env.test
+├─── .gitignore
+├─── .turbo/
+│   ├─── cache/
+│   │   ├─── 9fc5ac48492544c6-meta.json
+│   │   └─── 9fc5ac48492544c6.tar.zst
+│   ├─── cookies/
+│   │   ├─── 1.cookie
+│   │   ├─── 10.cookie
+│   │   ├─── 11.cookie
+│   │   ├─── 12.cookie
+│   │   ├─── 13.cookie
+│   │   ├─── 14.cookie
+│   │   ├─── 15.cookie
+│   │   ├─── 16.cookie
+│   │   ├─── 17.cookie
+│   │   ├─── 18.cookie
+│   │   ├─── 19.cookie
+│   │   ├─── 2.cookie
+│   │   ├─── 20.cookie
+│   │   ├─── 21.cookie
+│   │   ├─── 22.cookie
+│   │   ├─── 23.cookie
+│   │   ├─── 24.cookie
+│   │   ├─── 25.cookie
+│   │   ├─── 26.cookie
+│   │   ├─── 27.cookie
+│   │   ├─── 28.cookie
+│   │   ├─── 29.cookie
+│   │   ├─── 3.cookie
+│   │   ├─── 30.cookie
+│   │   ├─── 31.cookie
+│   │   ├─── 32.cookie
+│   │   ├─── 33.cookie
+│   │   ├─── 34.cookie
+│   │   ├─── 35.cookie
+│   │   ├─── 4.cookie
+│   │   ├─── 5.cookie
+│   │   ├─── 6.cookie
+│   │   ├─── 7.cookie
+│   │   ├─── 8.cookie
+│   │   └─── 9.cookie
+│   └─── daemon/
+│       └─── 1d35c9fe2a481418-turbo.log.2025-08-13
+├─── apps/
+│   ├─── functions/
+│   │   ├─── package.json
+│   │   ├─── src/
+│   │   │   └─── index.ts
+│   │   └─── tsconfig.json
+│   └─── web/
+│       ├─── app/
+│       │   └─── page.tsx
+│       ├─── next-env.d.ts
+│       ├─── package.json
+│       ├─── tsconfig.json
+│       └─── tsconfig.tsbuildinfo
+├─── errors.txt
+├─── package-lock.json
+├─── package.json
+├─── packages/
+│   ├─── contracts/
+│   │   ├─── package.json
+│   │   ├─── src/
+│   │   │   └─── index.ts
+│   │   ├─── tsconfig.build.json
+│   │   └─── tsconfig.json
+│   ├─── tsconfig/
+│   │   ├─── base.json
+│   │   ├─── nextjs.json
+│   │   ├─── node20.json
+│   │   └─── package.json
+│   └─── ui/
+│       ├─── package.json
+│       └─── tsconfig.json
+├─── pnpm-lock.yaml
+├─── pnpm-workspace.yaml
+├─── project_architecture.md
+├─── prompts/
+│   ├─── 0-bootstrap.md
+│   ├─── gemini_context.md
+│   ├─── gemini_lean_context.md
+│   └─── phase-0.md
+├─── scripts/
+│   └─── run-phase.sh
+└─── turbo.json
