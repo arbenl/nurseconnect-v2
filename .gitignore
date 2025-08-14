@@ -1,55 +1,77 @@
-# Dependencies
-node_modules
-.pnpm-store
+# ------------------------------
+# OS / Editors
+# ------------------------------
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
 
-# Build outputs
-.next
-dist
-build
+# ------------------------------
+# Environment files (do not commit secrets)
+# ------------------------------
+.env
+.env.local
+.env.*.local
 
-# Vercel
-.vercel
-
-# Local Environment Variables - DO NOT COMMIT REAL SECRETS
-.env*.local
-
-# Logs
-*.log
+# ------------------------------
+# Package managers / Logs
+# ------------------------------
+node_modules/
+pnpm-debug.log*
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
+*.log
+.pnpm-store/
 
-# OS generated files
-.DS_Store
-Thumbs.db
+# ------------------------------
+# Build outputs (repo-wide)
+# ------------------------------
+dist/
+build/
+.next/
+**/.next/
+out/
+*.tsbuildinfo
 
-# Test outputs
-coverage
-.nyc_output
+# ------------------------------
+# Hosting / Platforms
+# ------------------------------
+.vercel/
+
+# ------------------------------
+# Turborepo caches
+# ------------------------------
+.turbo/
+turbo-*
+
+# ------------------------------
+# Test artifacts
+# ------------------------------
+coverage/
+.nyc_output/
 playwright-report/
 test-results/
 
-# Editor
-.vscode/
-
-nurseconnect_ecosystem/
-nurseconnect_ecosystem_backup/
-nurseconnect_ecosystem_git/
-# node/next
-node_modules/
-.next/
-out/
-pnpm-debug.log*
-
-# IDE
-.vscode/
-.DS_Store
-
-# firebase emulator cache (optional)
+# ------------------------------
+# Firebase emulator & build output
+# ------------------------------
 .firebase/
+firestore-debug.log
+ui-debug.log
+firebase-debug.log
+apps/functions/lib/
 
-# embedded repos (keep on disk but don't track)
+# ------------------------------
+# Misc caches
+# ------------------------------
+*.cache
+
+# ------------------------------
+# Embedded repositories
+# ------------------------------
 nurseconnect_ecosystem/
 nurseconnect_ecosystem_backup/
-nurseconnect_ecosystem_git/
+nurseconnect_ecosystem_git/test-clone/

@@ -1,0 +1,6 @@
+# Use a lightweight base that already has Node + bash
+-P ubuntu-latest=node:20-bullseye
+-P ubuntu-22.04=node:20-bullseye
+
+# On M-series Macs, prefer native arm64 images (smaller & faster than emulating amd64)
+--container-architecture linux/arm64

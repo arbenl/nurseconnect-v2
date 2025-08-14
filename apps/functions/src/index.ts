@@ -1,24 +1,23 @@
-/**
- * Import function triggers from their respective sub-modules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
+import * as functions from "firebase-functions";
+import { initializeApp } from "firebase-admin/app";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
 
-import { onRequest } from "firebase-functions/v2/https";
-import * as logger from "firebase-functions/logger";
+initializeApp();
 
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
-
-export const helloWorld = onRequest((request, response) => {
-  logger.info("Hello logs!", { structuredData: true });
-  response.send("Hello from Firebase!");
+// HTTP test endpoint
+export const hello = functions.https.onRequest((req, res) => {
+  res.status(200).send("Hello from NurseConnect Functions");
 });
 
-// This is where you will add your core backend functions like:
-// exports.createRequest = ...
-// exports.assignNearestNurse = ...
-// exports.onUserCreate = ...
+// Auth user provisioning (runs on new signups)
+export const onAuthCreate = functions.auth.user().onCreate(async (user) => {
+  const db = getFirestore();
+  await db.doc(`users/${user.uid}`).set(
+    {
+      role: "patient",
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
+});

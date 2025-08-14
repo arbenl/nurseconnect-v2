@@ -3,21 +3,40 @@
   "private": true,
   "packageManager": "pnpm@10.14.0",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=20.0.0 <23.0.0"
   },
   "scripts": {
     "type-check": "turbo run type-check",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "dev": "turbo run dev --parallel",
-    "emulators:start": "firebase emulators:start"
+    "ci:local": "pnpm install --frozen-lockfile && pnpm turbo type-check && pnpm turbo lint && pnpm -w vitest run",
+    "ci:quick": "pnpm -r typecheck && pnpm -r lint",
+    "test:unit": "vitest run",
+    "emulators:start": "firebase emulators:start --only firestore,auth,functions"
   },
   "devDependencies": {
+    "@types/node": "^20.19.10",
+    "@typescript-eslint/eslint-plugin": "7.18.0",
+    "@typescript-eslint/parser": "7.18.0",
     "@vitest/coverage-v8": "^3.2.4",
     "@vitest/ui": "^3.2.4",
+    "eslint": "^9.33.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
     "firebase-tools": "^14.12.0",
     "turbo": "^2.5.5",
-    "typescript": "^5.4.0",
+    "typescript": "5.4.5",
     "vitest": "^3.2.4"
+  },
+  "pnpm": {
+    "overrides": {
+      "eslint": "8.57.0",
+      "@typescript-eslint/eslint-plugin": "6.21.0",
+      "@typescript-eslint/parser": "6.21.0",
+      "eslint-config-prettier": "9.1.0",
+      "eslint-plugin-react": "7.35.0",
+      "typescript": "5.4.5"
+    }
   }
 }
