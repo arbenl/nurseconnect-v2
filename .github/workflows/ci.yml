@@ -1,15 +1,59 @@
 name: CI
-on: [push, pull_request]
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-test:
     runs-on: ubuntu-latest
+    env:
+      CI: true
     steps:
       - uses: actions/checkout@v4
+
       - uses: pnpm/action-setup@v3
         with: { version: 9 }
-      - uses: actions/setup-node@v4
-        with: { node-version: '20', cache: 'pnpm' }
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm turbo lint || true
-      - run: pnpm turbo type-check
-      - run: pnpm -r test:unit || true
+
+      - name: Setup Node
+        if: ${{ env.ACT != 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm' 
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck & Lint
+        run: pnpm turbo type-check && pnpm turbo lint
+
+      - name: Unit tests
+        run: pnpm -w vitest run
+       # Java is required by Firebase Emulators
+      - name: Install Java (act only)
+        if: ${{ env.ACT == 'true' }}
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends openjdk-17-jre-headless
+
+      - name: Install Java (GitHub runners)
+        if: ${{ env.ACT != 'true' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends openjdk-17-jre-headless
+
+      - name: Install Firebase CLI
+        run: npm i -g firebase-tools@13
+
+      - name: Unit tests (with Firebase emulators)
+        env:
+          FIRESTORE_EMULATOR_HOST: 127.0.0.1:8080
+          FIREBASE_AUTH_EMULATOR_HOST: 127.0.0.1:9099
+        run: |
+          firebase emulators:exec --only firestore,auth --project demo-nurseconnect \
+            "pnpm -w vitest run"
