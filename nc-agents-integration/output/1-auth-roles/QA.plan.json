@@ -1,0 +1,49 @@
+{
+  "agent": "QA",
+  "task": "1-auth-roles",
+  "summary": "Adds integration tests for user authentication, profile creation, and route protection using Vitest against the Firebase emulator.",
+  "actions": [
+    {
+      "type": "write",
+      "path": "apps/web/vitest.setup.ts",
+      "description": "Creates a Vitest setup file to clear Firebase emulators before tests, ensuring a clean state.",
+      "content": "import { beforeAll, beforeEach, afterAll } from 'vitest';\nimport fetch from 'node-fetch';\n\nconst FIREBASE_PROJECT_ID = 'demo-nurseconnect';\nconst FIRESTORE_EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST || '127.0.0.1:8080';\nconst AUTH_EMULATOR_HOST = process.env.FIREBASE_AUTH_EMULATOR_HOST || '127.0.0.1:9099';\n\nconst clearFirestore = async () => {\n  const url = `http://${FIRESTORE_EMULATOR_HOST}/emulator/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;\n  await fetch(url, { method: 'DELETE' });\n};\n\nconst clearAuth = async () => {\n  const url = `http://${AUTH_EMULATOR_HOST}/emulator/v1/projects/${FIREBASE_PROJECT_ID}/accounts`;\n  await fetch(url, { method: 'DELETE' });\n};\n\n\nbeforeEach(async () => {\n  await Promise.all([clearFirestore(), clearAuth()]);\n});\n\nafterAll(async () => {\n  await Promise.all([clearFirestore(), clearAuth()]);\n});\n"
+    },
+    {
+      "type": "write",
+      "path": "apps/web/src/lib/firebase/auth-events.test.ts",
+      "description": "Tests the NextAuth signIn event hook to ensure a user profile is created in Firestore upon first login.",
+      "content": "import { describe, it, expect, vi } from 'vitest';\nimport { firestore } from './firebase-admin'; // Assumes admin app is initialized\nimport { onUserSignIn } from './auth-events'; // This is the hypothetical event handler\nimport type { User } from 'next-auth';\n\nvi.mock('./firebase-admin', () => ({\n  firestore: {\n    collection: vi.fn().mockReturnThis(),\n    doc: vi.fn().mockReturnThis(),\n    set: vi.fn(),\n  },\n}));\n\ndescribe('Auth Events', () => {\n  it('should create a user profile on first sign-in', async () => {\n    const user: User = {\n      id: 'test-user-123',\n      name: 'Test User',\n      email: 'test@example.com',\n    };\n\n    // Mock Firestore `get` to simulate user not found\n    const docRef = firestore.collection('users').doc(user.id);\n    (docRef as any).get = vi.fn().mockResolvedValue({ exists: false });\n\n    await onUserSignIn({ user });\n\n    expect(firestore.collection).toHaveBeenCalledWith('users');\n    expect(firestore.doc).toHaveBeenCalledWith(user.id);\n    expect(firestore.set).toHaveBeenCalledWith({\n      uid: user.id,\n      email: user.email,\n      displayName: user.name,\n      roles: ['viewer'],\n      createdAt: expect.any(Date),\n    });\n  });\n\n  it('should not overwrite an existing user profile', async () => {\n    const user: User = {\n      id: 'existing-user-456',\n      email: 'existing@example.com',\n    };\n\n    // Mock Firestore `get` to simulate user already exists\n    const docRef = firestore.collection('users').doc(user.id);\n    (docRef as any).get = vi.fn().mockResolvedValue({ exists: true });\n\n    await onUserSignIn({ user });\n\n    expect(firestore.set).not.toHaveBeenCalled();\n  });\n});\n"
+    },
+    {
+      "type": "write",
+      "path": "apps/web/src/middleware.test.ts",
+      "description": "Tests the Next.js middleware to verify that unauthenticated users are redirected from protected routes.",
+      "content": "import { describe, it, expect, vi } from 'vitest';\nimport { middleware } from './middleware';\nimport { NextRequest } from 'next/server';\n\nvi.mock('next-auth/jwt', () => ({\n  getToken: vi.fn(),\n}));\n\nimport { getToken } from 'next-auth/jwt';\n\ndescribe('Middleware', () => {\n  it('should redirect unauthenticated users from /dashboard to /login', async () => {\n    (getToken as vi.Mock).mockResolvedValue(null);\n\n    const req = new NextRequest('http://localhost:3000/dashboard');\n    const res = await middleware(req);\n\n    expect(res.status).toBe(307);\n    expect(res.headers.get('location')).toBe('http://localhost:3000/login');\n  });\n\n  it('should allow authenticated users to access /dashboard', async () => {\n    (getToken as vi.Mock).mockResolvedValue({ role: 'admin' });\n\n    const req = new NextRequest('http://localhost:3000/dashboard');\n    const res = await middleware(req);\n\n    // Expect no redirect, allowing the request to proceed\n    expect(res).toBeUndefined();\n  });\n\n  it('should allow anyone to access the home page', async () => {\n    (getToken as vi.Mock).mockResolvedValue(null);\n\n    const req = new NextRequest('http://localhost:3000/');\n    const res = await middleware(req);\n\n    expect(res).toBeUndefined();\n  });\n});\n"
+    },
+    {
+      "type": "append",
+      "path": "apps/web/vite.config.ts",
+      "description": "Updates the Vite config to include the new test setup file.",
+      "content": "\n// Add this to your existing test config object\ntest: {\n  globals: true,\n  environment: 'jsdom',\n  setupFiles: './vitest.setup.ts',\n},"
+    },
+    {
+      "type": "append",
+      "path": "README.md",
+      "description": "Adds instructions for running the new authentication tests to the main README file.",
+      "content": "\n\n## Phase 1: Auth & Roles Testing\n\nTo run the integration tests for authentication and authorization, use the Firebase emulator.\n\nbash\n# Run all auth-related tests against the live emulator\nfirebase emulators:exec --only firestore,auth --project demo-nurseconnect \"pnpm -w test:auth\"\n\n"
+    }
+  ],
+  "verify": [
+    "pnpm install",
+    "pnpm -w exec vitest run src/lib/firebase/auth-events.test.ts src/middleware.test.ts",
+    "firebase emulators:exec --only firestore,auth --project demo-nurseconnect \"pnpm -w exec vitest run\""
+  ],
+  "notes": [
+    "This plan assumes a Next.js application structure within `apps/web`.",
+    "It tests the core logic for profile creation and route protection in isolation using Vitest.",
+    "The `onUserSignIn` function is assumed to exist in `apps/web/src/lib/firebase/auth-events.ts` and be connected to the NextAuth `events` configuration.",
+    "Ensure `apps/web/vite.config.ts` is updated correctly; the content provided is a snippet to be merged.",
+    "For full E2E validation, Playwright tests covering the login UI flow would be the next step."
+  ]
+}

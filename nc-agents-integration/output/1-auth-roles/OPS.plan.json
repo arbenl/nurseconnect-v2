@@ -1,0 +1,83 @@
+{
+  "agent": "OPS",
+  "task": "1-auth-roles",
+  "summary": "Sets up NextAuth.js with Firebase emulators, adds login/signup pages, protects dashboard routes, and configures CI scripts for verification.",
+  "actions": [
+    {
+      "type": "write",
+      "path": "firebase.json",
+      "description": "Configure Firebase emulators for Auth and Firestore.",
+      "content": "{\n  \"emulators\": {\n    \"auth\": {\n      \"port\": 9099\n    },\n    \"firestore\": {\n      \"port\": 8080\n    },\n    \"ui\": {\n      \"enabled\": true,\n      \"port\": 4000\n    }\n  },\n  \"firestore\": {\n    \"rules\": \"packages/database/firestore.rules\"\n  }\n}"
+    },
+    {
+      "type": "write",
+      "path": "packages/database/firestore.rules",
+      "description": "Initial Firestore security rules to protect user data.",
+      "content": "rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /users/{userId} {\n      allow read, write: if request.auth != null && request.auth.uid == userId;\n    }\n    match /users/{userId}/{document=**} {\n      allow read, write: if request.auth != null && request.auth.uid == userId;\n    }\n  }\n}"
+    },
+    {
+      "type": "replace",
+      "path": "package.json",
+      "description": "Add dependencies (next-auth, firebase) and verification scripts.",
+      "content": "{\n  \"name\": \"nurseconnect-v2\",\n  \"private\": true,\n  \"scripts\": {\n    \"build\": \"turbo build\",\n    \"dev\": \"turbo dev\",\n    \"lint\": \"turbo lint\",\n    \"test\": \"pnpm -w vitest run\",\n    \"test:watch\": \"pnpm -w vitest\",\n    \"ci:phase\": \"firebase emulators:exec --only firestore,auth --project demo-nurseconnect \\\"pnpm test\\\"\"\n  },\n  \"devDependencies\": {\n    \"turbo\": \"^1.10.12\",\n    \"typescript\": \"^5.2.2\",\n    \"@types/node\": \"^20.8.9\",\n    \"vitest\": \"^0.34.6\",\n    \"@firebase/rules-unit-testing\": \"^3.0.0\"\n  },\n  \"packageManager\": \"pnpm@8.6.0\",\n  \"dependencies\": {\n    \"next-auth\": \"^4.24.5\",\n    \"@next-auth/firebase-adapter\": \"^2.0.1\",\n    \"firebase\": \"^10.7.1\",\n    \"firebase-admin\": \"^12.0.0\"\n  }\n}"
+    },
+    {
+      "type": "write",
+      "path": "apps/web/.env.local.example",
+      "description": "Document environment variables for NextAuth and Firebase emulators.",
+      "content": "# NextAuth\nNEXTAUTH_SECRET=\nNEXTAUTH_URL=http://localhost:3000\n\n# Firebase Client - can be empty for emulator, but required for production\nNEXT_PUBLIC_FIREBASE_API_KEY=\nNEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=\nNEXT_PUBLIC_FIREBASE_PROJECT_ID=demo-nurseconnect\nNEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=\nNEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=\nNEXT_PUBLIC_FIREBASE_APP_ID=\n\n# Firebase Admin/Emulator\nFIREBASE_AUTH_EMULATOR_HOST=\"127.0.0.1:9099\"\nFIRESTORE_EMULATOR_HOST=\"127.0.0.1:8080\"\n# For emulators, this can be a dummy JSON object like '{}'. For production, use a real key.\nFIREBASE_SERVICE_ACCOUNT_JSON={}\n"
+    },
+    {
+      "type": "write",
+      "path": "apps/web/middleware.ts",
+      "description": "Add middleware to protect dashboard routes using NextAuth.",
+      "content": "export { default } from \"next-auth/middleware\"\n\nexport const config = { matcher: [\"/dashboard/:path*\"] }\n"
+    },
+    {
+      "type": "write",
+      "path": "apps/web/src/lib/firebase/admin.ts",
+      "description": "Initialize the Firebase Admin SDK for server-side operations.",
+      "content": "import admin from 'firebase-admin';\n\nif (!admin.apps.length) {\n  try {\n    admin.initializeApp({\n      credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON!))\n    });\n  } catch (error) {\n    console.error('Firebase admin initialization error', error);\n  }\n}\n\nexport const adminDb = admin.firestore();\nexport const adminAuth = admin.auth();\n"
+    },
+    {
+      "type": "write",
+      "path": "apps/web/src/app/api/auth/[...nextauth]/route.ts",
+      "description": "Configure NextAuth with a credentials provider and Firebase adapter.",
+      "content": "import NextAuth, { NextAuthOptions } from 'next-auth';\nimport CredentialsProvider from 'next-auth/providers/credentials';\nimport { FirestoreAdapter } from '@next-auth/firebase-adapter';\nimport { adminDb } from '@/lib/firebase/admin';\nimport { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';\nimport { auth } from '@/lib/firebase/client';\n\nexport const authOptions: NextAuthOptions = {\n  providers: [\n    CredentialsProvider({\n      name: 'Credentials',\n      credentials: {\n        email: { label: \"Email\", type: \"email\" },\n        password: { label: \"Password\", type: \"password\" },\n        isSignUp: { label: \"isSignUp\", type: \"text\" } \n      },\n      async authorize(credentials) {\n        if (!credentials) return null;\n        try {\n          if (credentials.isSignUp === 'true') {\n            const userCredential = await createUserWithEmailAndPassword(auth, credentials.email, credentials.password);\n            const user = userCredential.user;\n            return user ? { id: user.uid, email: user.email } : null;\n          } else {\n            const userCredential = await signInWithEmailAndPassword(auth, credentials.email, credentials.password);\n            const user = userCredential.user;\n            return user ? { id: user.uid, email: user.email } : null;\n          }\n        } catch (e) {\n          console.error(\"Auth Error: \", e);\n          return null;\n        }\n      }\n    })\n  ],\n  adapter: FirestoreAdapter(adminDb),\n  session: { strategy: 'jwt' },\n  callbacks: {\n    async session({ session, token }) {\n      if (token) session.user.id = token.uid as string;\n      return session;\n    },\n    async jwt({ token, user }) {\n      if (user) token.uid = user.id;\n      return token;\n    },\n  },\n  events: {\n    createUser: async ({ user }) => {\n      const userRef = adminDb.collection('users').doc(user.id);\n      await userRef.set({ email: user.email, createdAt: new Date(), roles: ['nurse'] }, { merge: true });\n    }\n  },\n  pages: { signIn: '/login' },\n  secret: process.env.NEXTAUTH_SECRET,\n};\n\nconst handler = NextAuth(authOptions);\n\nexport { handler as GET, handler as POST };\n"
+    },
+    {
+      "type": "write",
+      "path": "apps/web/src/lib/firebase/client.ts",
+      "description": "Initialize the Firebase client SDK and connect to emulators in dev.",
+      "content": "import { getApps, initializeApp, getApp } from 'firebase/app';\nimport { getAuth, connectAuthEmulator } from 'firebase/auth';\nimport { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';\n\nconst firebaseConfig = {\n  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,\n  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,\n  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,\n  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,\n  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,\n  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,\n};\n\nconst app = !getApps().length ? initializeApp(firebaseConfig) : getApp();\nconst auth = getAuth(app);\nconst db = getFirestore(app);\n\nif (process.env.NODE_ENV === 'development') {\n  try {\n    connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });\n    connectFirestoreEmulator(db, '127.0.0.1', 8080);\n  } catch (error) {\n    console.log('Error connecting to emulators', error);\n  }\n}\n\nexport { app, auth, db };\n"
+    },
+    {
+      "type": "write",
+      "path": "apps/web/src/app/(auth)/login/page.tsx",
+      "description": "Create a basic login page component.",
+      "content": "'use client';\n\nimport { useState } from 'react';\nimport { signIn } from 'next-auth/react';\nimport { useRouter } from 'next/navigation';\n\nexport default function LoginPage() {\n  const [email, setEmail] = useState('');\n  const [password, setPassword] = useState('');\n  const [error, setError] = useState('');\n  const router = useRouter();\n\n  const handleSubmit = async (e: React.FormEvent) => {\n    e.preventDefault();\n    setError('');\n    const result = await signIn('credentials', {\n      redirect: false,\n      email,\n      password,\n      isSignUp: 'false',\n    });\n    if (result?.error) {\n      setError('Invalid credentials. Please try again.');\n    } else if (result?.ok) {\n      router.push('/dashboard');\n    }\n  };\n\n  return (\n    <div>\n      <h1>Login</h1>\n      <form onSubmit={handleSubmit}>\n        <input type=\"email\" value={email} onChange={(e) => setEmail(e.target.value)} placeholder=\"Email\" required />\n        <input type=\"password\" value={password} onChange={(e) => setPassword(e.target.value)} placeholder=\"Password\" required />\n        <button type=\"submit\">Login</button>\n        {error && <p style={{ color: 'red' }}>{error}</p>}\n      </form>\n      <p>Don't have an account? <a href=\"/signup\">Sign up</a></p>\n    </div>\n  );\n}\n"
+    },
+    {
+      "type": "write",
+      "path": "apps/web/src/app/(auth)/signup/page.tsx",
+      "description": "Create a basic sign-up page component.",
+      "content": "'use client';\n\nimport { useState } from 'react';\nimport { signIn } from 'next-auth/react';\nimport { useRouter } from 'next/navigation';\n\nexport default function SignUpPage() {\n  const [email, setEmail] = useState('');\n  const [password, setPassword] = useState('');\n  const [error, setError] = useState('');\n  const router = useRouter();\n\n  const handleSubmit = async (e: React.FormEvent) => {\n    e.preventDefault();\n    setError('');\n    const result = await signIn('credentials', {\n      redirect: false,\n      email,\n      password,\n      isSignUp: 'true',\n    });\n    if (result?.error) {\n      setError('Could not create account. The email might be taken.');\n    } else if (result?.ok) {\n      router.push('/dashboard');\n    }\n  };\n\n  return (\n    <div>\n      <h1>Sign Up</h1>\n      <form onSubmit={handleSubmit}>\n        <input type=\"email\" value={email} onChange={(e) => setEmail(e.target.value)} placeholder=\"Email\" required />\n        <input type=\"password\" value={password} onChange={(e) => setPassword(e.target.value)} placeholder=\"Password\" required />\n        <button type=\"submit\">Sign Up</button>\n        {error && <p style={{ color: 'red' }}>{error}</p>}\n      </form>\n      <p>Already have an account? <a href=\"/login\">Login</a></p>\n    </div>\n  );\n}\n"
+    },
+    {
+      "type": "write",
+      "path": "packages/tests/tests/auth.spec.ts",
+      "description": "Add initial tests for Firestore security rules.",
+      "content": "import { describe, it, expect, beforeAll, afterAll } from 'vitest';\nimport { initializeTestEnvironment, RulesTestEnvironment } from '@firebase/rules-unit-testing';\nimport { doc, getDoc, setDoc } from 'firebase/firestore';\nimport { readFileSync } from 'fs';\n\nlet testEnv: RulesTestEnvironment;\n\ndescribe('Auth and Firestore Rules', () => {\n  beforeAll(async () => {\n    testEnv = await initializeTestEnvironment({\n      projectId: 'demo-nurseconnect',\n      firestore: {\n        rules: readFileSync('packages/database/firestore.rules', 'utf8'),\n        host: '127.0.0.1',\n        port: 8080,\n      },\n    });\n  });\n\n  afterAll(async () => {\n    await testEnv.cleanup();\n  });\n\n  it('should allow a user to read and write their own profile', async () => {\n    const alice = testEnv.authenticatedContext('alice_uid');\n    const aliceDocRef = doc(alice.firestore(), 'users/alice_uid');\n    await expect(setDoc(aliceDocRef, { name: 'Alice' })).resolves.toBeUndefined();\n    const docSnap = await getDoc(aliceDocRef);\n    expect(docSnap.exists()).toBe(true);\n    expect(docSnap.data()?.name).toBe('Alice');\n  });\n\n  it('should prevent a user from writing to another user profile', async () => {\n    const alice = testEnv.authenticatedContext('alice_uid');\n    const bobDocRef = doc(alice.firestore(), 'users/bob_uid');\n    await expect(setDoc(bobDocRef, { name: 'Bob' })).rejects.toThrow();\n  });\n});\n"
+    }
+  ],
+  "verify": [
+    "pnpm install",
+    "pnpm run ci:phase"
+  ],
+  "notes": [
+    "This plan REPLACES the root package.json to add new dependencies and scripts. If you have other changes in this file, please merge them manually.",
+    "The `.env.local.example` file contains placeholders. You must create a `.env.local` file and generate a `NEXTAUTH_SECRET` (e.g., `openssl rand -base64 32`).",
+    "The Firebase client config in `.env.local` can use empty values for emulator-based development, but will need real values from your Firebase project for production.",
+    "This plan assumes a `packages/tests` workspace exists for running vitest. If not, you may need to create a `packages/tests/package.json`."
+  ]
+}
