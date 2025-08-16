@@ -53,3 +53,8 @@ pnpm-debug.log*
 nurseconnect_ecosystem/
 nurseconnect_ecosystem_backup/
 nurseconnect_ecosystem_git/
+
+# agent outputs
+/output/
+/*.plan.json
+*.plan.md

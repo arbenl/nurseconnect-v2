@@ -1,0 +1,101 @@
+{
+  "agent": "DEV",
+  "task": "1-auth-roles",
+  "summary": "Implements NextAuth.js with Firebase for authentication, including sign-in pages, route protection, and user profile creation.",
+  "actions": [
+    {
+      "type": "write",
+      "path": "apps/web/.env.local.example",
+      "description": "Create an example environment file for required secrets and configuration.",
+      "content": "# NextAuth.js\nNEXTAUTH_SECRET= # Generate one with: openssl rand -base64 32\nNEXTAUTH_URL=http://localhost:3000\n\n# NextAuth.js Email Provider\n# See https://next-auth.js.org/providers/email\nEMAIL_SERVER=smtp://user:pass@smtp.example.com:587\nEMAIL_FROM=noreply@example.com\n\n# Firebase Client SDK (public)\nNEXT_PUBLIC_FIREBASE_API_KEY=\nNEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=\nNEXT_PUBLIC_FIREBASE_PROJECT_ID=\nNEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=\nNEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=\nNEXT_PUBLIC_FIREBASE_APP_ID=\n\n# Firebase Admin SDK (server-side only)\n# A base64 encoded JSON of your service account credentials.\n# e.g., `cat path/to/your/serviceAccountKey.json | base64`\nFIREBASE_SERVICE_ACCOUNT_JSON_BASE64=\n"
+    },
+    {
+      "type": "write",
+      "path": "apps/web/src/lib/firebase/client.ts",
+      "description": "Initialize and export the Firebase client SDK for client-side use.",
+      "content": "import { getApp, getApps, initializeApp } from 'firebase/app';\nimport { getAuth } from 'firebase/auth';\nimport { getFirestore } from 'firebase/firestore';\n\nconst firebaseConfig = {\n  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,\n  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,\n  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,\n  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,\n  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,\n  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,\n};\n\nconst app = !getApps().length ? initializeApp(firebaseConfig) : getApp();\nconst db = getFirestore(app);\nconst auth = getAuth(app);\n\nexport { app, db, auth };\n"
+    },
+    {
+      "type": "write",
+      "path": "apps/web/src/lib/firebase/admin.ts",
+      "description": "Initialize the Firebase Admin SDK for server-side operations like the NextAuth adapter.",
+      "content": "import * as admin from 'firebase-admin';\n\nconst serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON_BASE64\n  ? Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_JSON_BASE64, 'base64').toString('utf-8')\n  : '{}';\n\nif (!admin.apps.length) {\n  try {\n    admin.initializeApp({\n      credential: admin.credential.cert(JSON.parse(serviceAccountJson)),\n    });\n  } catch (error) {\n    console.error('Firebase Admin SDK initialization error:', error);\n  }\n}\n\nexport const adminDb = admin.firestore();\nexport const adminAuth = admin.auth();\n"
+    },
+    {
+      "type": "write",
+      "path": "apps/web/src/types/next-auth.d.ts",
+      "description": "Define custom TypeScript types for NextAuth's Session and User objects to include 'id' and 'role'.",
+      "content": "import type { DefaultSession, User as DefaultUser } from 'next-auth';\n\ndeclare module 'next-auth' {\n  interface Session {\n    user: {\n      id: string;\n      role: string;\n    } & DefaultSession['user'];\n  }\n\n  interface User extends DefaultUser {\n    role?: string;\n  }\n}\n\ndeclare module 'next-auth/jwt' {\n  interface JWT {\n    id: string;\n    role: string;\n  }\n}\n"
+    },
+    {
+      "type": "write",
+      "path": "apps/web/src/lib/auth/config.ts",
+      "description": "Configure NextAuth.js with an Email provider and the Firestore adapter, including session/JWT callbacks and a user creation event.",
+      "content": "import { FirestoreAdapter } from '@next-auth/firebase-adapter';\nimport { NextAuthOptions } from 'next-auth';\nimport EmailProvider from 'next-auth/providers/email';\nimport { adminDb } from '@/lib/firebase/admin';\nimport { doc, setDoc, getDoc } from 'firebase/firestore';\nimport { db } from '@/lib/firebase/client';\n\nexport const authOptions: NextAuthOptions = {\n  providers: [\n    EmailProvider({\n      server: process.env.EMAIL_SERVER,\n      from: process.env.EMAIL_FROM,\n    }),\n  ],\n  adapter: FirestoreAdapter(adminDb),\n  session: {\n    strategy: 'jwt',\n  },\n  callbacks: {\n    async jwt({ token, user }) {\n      if (user?.id) {\n        const userDoc = await getDoc(doc(db, 'users', user.id));\n        const userData = userDoc.data();\n        token.id = user.id;\n        token.role = userData?.role || 'nurse';\n      }\n      return token;\n    },\n    async session({ session, token }) {\n      if (session.user) {\n        session.user.id = token.id;\n        session.user.role = token.role;\n      }\n      return session;\n    },\n  },\n  events: {\n    async createUser({ user }) {\n      const userRef = doc(db, 'users', user.id);\n      await setDoc(userRef, {\n        email: user.email,\n        name: user.name,\n        image: user.image,\n        role: 'nurse', // Default role for new users\n        createdAt: new Date().toISOString(),\n      });\n    },\n  },\n  pages: {\n    signIn: '/signin',\n    verifyRequest: '/verify-request',\n    error: '/signin', // Redirect to signin page on error\n  },\n  secret: process.env.NEXTAUTH_SECRET,\n};\n"
+    },
+    {
+      "type": "write",
+      "path": "apps/web/src/app/api/auth/[...nextauth]/route.ts",
+      "description": "Create the NextAuth.js API route handler.",
+      "content": "import NextAuth from 'next-auth';\nimport { authOptions } from '@/lib/auth/config';\n\nconst handler = NextAuth(authOptions);\n\nexport { handler as GET, handler as POST };\n"
+    },
+    {
+      "type": "write",
+      "path": "apps/web/src/middleware.ts",
+      "description": "Implement NextAuth.js middleware to protect dashboard routes.",
+      "content": "export { default } from 'next-auth/middleware';\n\nexport const config = {\n  matcher: ['/dashboard/:path*'],\n};\n"
+    },
+    {
+      "type": "write",
+      "path": "apps/web/src/components/auth-provider.tsx",
+      "description": "Create a client-side session provider component.",
+      "content": "'use client';\n\nimport { SessionProvider } from 'next-auth/react';\nimport React from 'react';\n\ntype Props = {\n  children: React.ReactNode;\n};\n\nexport default function AuthProvider({ children }: Props) {\n  return <SessionProvider>{children}</SessionProvider>;\n}\n"
+    },
+    {
+      "type": "write",
+      "path": "apps/web/src/app/layout.tsx",
+      "description": "Update the root layout to include the AuthProvider for session management across the app.",
+      "content": "import './globals.css';\nimport AuthProvider from '@/components/auth-provider';\n\nexport const metadata = {\n  title: 'NurseConnect v2',\n  description: 'Modern scheduling for healthcare professionals.',\n};\n\nexport default function RootLayout({\n  children,\n}: {\n  children: React.ReactNode;\n}) {\n  return (\n    <html lang=\"en\">\n      <body>\n        <AuthProvider>{children}</AuthProvider>\n      </body>\n    </html>\n  );\n}\n"
+    },
+    {
+      "type": "write",
+      "path": "apps/web/src/app/(auth)/layout.tsx",
+      "description": "Create a shared layout for authentication pages.",
+      "content": "import React from 'react';\n\nexport default function AuthLayout({ children }: { children: React.ReactNode }) {\n  return (\n    <main className=\"flex min-h-screen items-center justify-center bg-gray-50\">\n      <div className=\"w-full max-w-md rounded-lg bg-white p-8 shadow-sm ring-1 ring-gray-200\">\n        {children}\n      </div>\n    </main>\n  );\n}\n"
+    },
+    {
+      "type": "write",
+      "path": "apps/web/src/app/(auth)/signin/page.tsx",
+      "description": "Create the sign-in page with a form for email-based authentication.",
+      "content": "'use client';\n\nimport { signIn } from 'next-auth/react';\nimport { useState } from 'react';\n\nexport default function SignInPage() {\n  const [email, setEmail] = useState('');\n  const [loading, setLoading] = useState(false);\n  const [error, setError] = useState('');\n\n  const handleSubmit = async (e: React.FormEvent) => {\n    e.preventDefault();\n    setLoading(true);\n    setError('');\n    try {\n      const res = await signIn('email', { email, redirect: false, callbackUrl: '/dashboard' });\n      if (res?.error) {\n        setError('Failed to send sign-in link. Please check the email and try again.');\n      } else {\n        window.location.href = '/verify-request';\n      }\n    } finally {\n      setLoading(false);\n    }\n  };\n\n  return (\n    <div>\n      <h2 className=\"text-center text-2xl font-bold tracking-tight text-gray-900\">Sign in to your account</h2>\n      <form onSubmit={handleSubmit} className=\"mt-6 space-y-6\">\n        {error && <p className=\"text-center text-sm text-red-600\">{error}</p>}\n        <div>\n          <label htmlFor=\"email\" className=\"block text-sm font-medium leading-6 text-gray-900\">\n            Email address\n          </label>\n          <div className=\"mt-2\">\n            <input\n              id=\"email\"\n              name=\"email\"\n              type=\"email\"\n              autoComplete=\"email\"\n              required\n              value={email}\n              onChange={(e) => setEmail(e.target.value)}\n              className=\"block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6\"\n            />\n          </div>\n        </div>\n        <button\n          type=\"submit\"\n          disabled={loading}\n          className=\"flex w-full justify-center rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50\"\n        >\n          {loading ? 'Sending link...' : 'Sign in with Email'}\n        </button>\n      </form>\n    </div>\n  );\n}\n"
+    },
+    {
+      "type": "write",
+      "path": "apps/web/src/app/(auth)/verify-request/page.tsx",
+      "description": "Create a page to inform users to check their email for the sign-in link.",
+      "content": "export default function VerifyRequestPage() {\n  return (\n    <div className=\"text-center\">\n      <h1 className=\"text-2xl font-bold tracking-tight text-gray-900\">Check your email</h1>\n      <p className=\"mt-4 text-gray-600\">A sign-in link has been sent to your email address.</p>\n    </div>\n  );\n}\n"
+    },
+    {
+      "type": "write",
+      "path": "apps/web/src/app/dashboard/page.tsx",
+      "description": "Create a protected dashboard page to display session information.",
+      "content": "import { getServerSession } from 'next-auth';\nimport { authOptions } from '@/lib/auth/config';\n\nexport default async function DashboardPage() {\n  const session = await getServerSession(authOptions);\n\n  return (\n    <div className=\"p-8\">\n      <h1 className=\"text-2xl font-bold\">Dashboard</h1>\n      <p className=\"mt-4\">Welcome, {session?.user?.name || session?.user?.email}!</p>\n      <p>Your assigned role is: <strong>{session?.user?.role}</strong></p>\n      <div className=\"mt-6 p-4 bg-gray-50 rounded-md overflow-x-auto\">\n        <h3 className=\"font-semibold\">Session Details:</h3>\n        <pre className=\"text-sm\">{JSON.stringify(session, null, 2)}</pre>\n      </div>\n    </div>\n  );\n}\n"
+    },
+    {
+      "type": "write",
+      "path": "apps/web/src/app/page.tsx",
+      "description": "Update the home page to show a sign-in link or a link to the dashboard if authenticated.",
+      "content": "import { getServerSession } from 'next-auth';\nimport Link from 'next/link';\nimport { authOptions } from '@/lib/auth/config';\n\nexport default async function HomePage() {\n  const session = await getServerSession(authOptions);\n\n  return (\n    <main className=\"flex min-h-screen flex-col items-center justify-center p-24\">\n      <div className=\"text-center\">\n        <h1 className=\"text-4xl font-bold tracking-tight sm:text-6xl\">NurseConnect v2</h1>\n        <p className=\"mt-6 text-lg leading-8 text-gray-600\">Modern scheduling for healthcare professionals.</p>\n        <div className=\"mt-10\">\n          {session ? (\n            <Link href=\"/dashboard\" className=\"rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600\">\n              Go to Dashboard\n            </Link>\n          ) : (\n            <Link href=\"/signin\" className=\"rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600\">\n              Get Started\n            </Link>\n          )}\n        </div>\n      </div>\n    </main>\n  );\n}\n"
+    }
+  ],
+  "verify": [
+    "pnpm run ci:phase",
+    "firebase emulators:exec --only firestore,auth --project demo-nurseconnect \"pnpm -w vitest run\""
+  ],
+  "notes": [
+    "This plan sets up the core authentication structure. You must install the required dependencies in the 'apps/web' workspace: `pnpm add next-auth @next-auth/firebase-adapter firebase firebase-admin`.",
+    "Ensure you have a `.env.local` file in `apps/web` with the necessary values as defined in `.env.local.example`.",
+    "The Email provider requires an SMTP server configuration. For development, you can use a tool like MailHog.",
+    "Firestore security rules will need to be configured to properly secure user profile data."
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "extends": ["next", "next/core-web-vitals"],
+  "rules": {
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "firebase-admin",
+            "message": "Use firebase-admin only in server-side code (API routes or src/server/*)."
+          }
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/app/api/**",
+        "src/server/**",
+        "src/lib/firebase/admin.ts"
+      ],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    }
+  ]
+}

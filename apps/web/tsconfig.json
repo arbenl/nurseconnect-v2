@@ -2,27 +2,35 @@
   "extends": "../../packages/tsconfig/nextjs.json",
   "compilerOptions": {
     "baseUrl": ".",
-    "paths": { "@/*": ["src/*"] },
+    "paths": {
+      "@/*": [
+        "src/*"
+      ]
+    },
     "noEmit": true,
     "jsx": "preserve",
     "plugins": [
       {
         "name": "next"
       }
+    ],
+    "types": [
+      "node",
+      "vitest/globals"
     ]
   },
   "include": [
+    ".next/types/**/*.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    "app/**/*",
+    "components/**/*",
     "next-env.d.ts",
     "next.config.*",
-    "app/**/*",
     "pages/**/*",
-    "components/**/*",
     "src/**/*",
     "types/**/*",
-    ".next/types/**/*.ts"
+    "vitest-env.d.ts"
   ],
-  "exclude": [
-    "node_modules",
-    ".next"
-  ]
+  "exclude": ["**/*.test.ts", "**/*.test.tsx", "**/__tests__/**"]
 }
