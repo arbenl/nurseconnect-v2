@@ -1,22 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { LoginSchema, type LoginSchema as LoginSchemaType } from '@nurseconnect-v2/packages/contracts';
+import { useState } from 'react';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginSchemaType>({
+    resolver: zodResolver(LoginSchema),
+  });
+
+  const onSubmit = async (data: LoginSchemaType) => {
     setError('');
     const result = await signIn('credentials', {
       redirect: false,
-      email,
-      password,
+      email: data.email,
+      password: data.password,
       isSignUp: 'false',
     });
     if (result?.error) {
@@ -29,13 +37,17 @@ export default function LoginPage() {
   return (
     <div>
       <h1>Login</h1>
-      <form onSubmit={handleSubmit}>
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" required />
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" required />
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <input type="email" {...register('email')} placeholder="Email" />
+        {errors.email && <p style={{ color: 'red' }}>{errors.email.message}</p>}
+        <input type="password" {...register('password')} placeholder="Password" />
+        {errors.password && <p style={{ color: 'red' }}>{errors.password.message}</p>}
         <button type="submit">Login</button>
         {error && <p style={{ color: 'red' }}>{error}</p>}
       </form>
-      <p>Don&apos;t have an account? <a href="/signup">Sign up</a></p>
+      <p>
+        Don&apos;t have an account? <a href="/signup">Sign up</a>
+      </p>
     </div>
   );
 }

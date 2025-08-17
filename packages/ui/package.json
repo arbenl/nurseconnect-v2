@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "exports": {
+    "./lib/utils": "./src/lib/utils.ts"
+  },
   "scripts": {
     "type-check": "tsc -p tsconfig.json --noEmit"
   }

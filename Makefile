@@ -16,6 +16,8 @@ plan-all:
 	node scripts/agent-runner.mjs qa $(TASK)
 	node scripts/agent-runner.mjs security $(TASK)
 	node scripts/agent-runner.mjs ops $(TASK)
+	node scripts/agent-runner.mjs ux $(TASK)
+	node scripts/agent-runner.mjs perf $(TASK)
 
 apply:
 	@if [ -z "$(PLAN)" ]; then echo "Specify PLAN=output/<task>/<AGENT>.plan.json"; exit 1; fi

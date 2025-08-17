@@ -1,15 +1,14 @@
-# Phase: Auth & Roles
+We need modern UX for Phase 1 (Auth & Roles).
 
-## Implementation Tasks
-1) NextAuth.js with Firebase (credentials or email link) and session population.
-2) Signup/Login pages under apps/web/src/app/(auth)/...
-3) Middleware or server components to protect /dashboard.
-4) Minimal roles helper and Firestore profile creation hook.
+Scope:
+- Home page hero with clear CTA (Sign in/Sign up), responsive, dark mode, accessible.
+- Top nav (hamburger on mobile), authenticated vs unauthenticated states.
+- Signup/Login pages using shadcn/ui forms, field validation, error states.
+- Dashboard shell: sidebar on desktop, tabbed bottom bar on mobile.
+- Design tokens (tailwind.config) and CSS variables; dark mode toggle.
 
-## Exit Criteria
-- All new tests pass with: `pnpm run ci:phase`
-- `firebase emulators:exec --only firestore,auth --project demo-nurseconnect "pnpm -w vitest run"` passes.
-- Lint/typecheck remain clean.
-
-## Output Format (IMPORTANT)
-Return only JSON with an 'ops' array following the supported operations (ensureDir, writeFile, mergeJson, addDeps, run, print).
+Exit Criteria:
+- Pages render on mobile & desktop without layout shift.
+- Basic keyboard navigation works; labels & aria present.
+- Lighthouse mobile performance >= 85, accessibility >= 95 (if perf agent used).
+- Vitest snapshots or simple render tests for key components.
