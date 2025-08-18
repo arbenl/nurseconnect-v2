@@ -1,17 +1,27 @@
 # Dependencies
-node_modules
-.pnpm-store
+node_modules/
+pnpm-debug.log*
+.pnpm-store/
+.pnp*
+.pnp.*
 
-# Build outputs
-.next
-dist
-build
+# builds & caches
+.turbo/
+.next/
+coverage/
+dist/
+out/
+**/*.tsbuildinfo
 
 # Vercel
 .vercel
 
-# Local Environment Variables - DO NOT COMMIT REAL SECRETS
-.env*.local
+# env files (keep examples tracked)
+.env*
+!.env.example
+apps/*/.env.local
+apps/*/.env.development.local
+apps/*/.env.production.local
 
 # Logs
 *.log
@@ -58,3 +68,5 @@ nurseconnect_ecosystem_git/
 /output/
 /*.plan.json
 *.plan.md
+.env.test
+.turbo/

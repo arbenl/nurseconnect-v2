@@ -1,27 +1,35 @@
-import { getServerSession } from 'next-auth';
-import Link from 'next/link';
-import { authOptions } from '@/lib/auth/config';
+import { Header } from "@/components/header";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
-export default async function HomePage() {
-  const session = await getServerSession(authOptions);
-
+export default function HomePage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">NurseConnect v2</h1>
-        <p className="mt-6 text-lg leading-8 text-gray-600">Modern scheduling for healthcare professionals.</p>
-        <div className="mt-10">
-          {session ? (
-            <Link href="/dashboard" className="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-              Go to Dashboard
-            </Link>
-          ) : (
-            <Link href="/signin" className="rounded-md bg-indigo-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-              Get Started
-            </Link>
-          )}
-        </div>
-      </div>
-    </main>
+    <div className="flex flex-col min-h-screen">
+      <Header />
+      <main className="flex-1">
+        <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48">
+          <div className="container px-4 md:px-6">
+            <div className="flex flex-col items-center space-y-4 text-center">
+              <div className="space-y-2">
+                <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
+                  Empowering Healthcare Professionals
+                </h1>
+                <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
+                  NurseConnect provides a seamless platform for scheduling, communication, and patient management.
+                </p>
+              </div>
+              <div className="space-x-4">
+                <Button asChild size="lg">
+                  <Link href="/signup">Get Started</Link>
+                </Button>
+                <Button asChild variant="secondary" size="lg">
+                  <Link href="/login">Sign In</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
   );
 }

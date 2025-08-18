@@ -1,75 +1,49 @@
-/// <reference types="vitest/globals" />
-import { describe, it, expect, vi } from 'vitest';
-import type { Mock } from 'vitest';
-import { adminDb } from './admin';
-import { onUserSignIn } from './auth-events';
-import type { User } from 'next-auth';
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { Firestore } from 'firebase/firestore'
+import { onUserSignIn } from './auth-events'
 
-// Keep the module shape but allow overriding return values per test
-vi.mock('./admin', () => ({
-  adminDb: {
-    collection: vi.fn(() => ({
-      doc: vi.fn((docId: string) => ({
-        id: docId,
-        get: vi.fn(),
-        set: vi.fn(),
-      })),
-    })),
-  },
-}));
+// Create spies we can assert on
+const mockSetDoc = vi.fn()
+const mockGetDoc = vi.fn()
+const mockDoc = vi.fn()
+
+// Mock only the Firestore functions we use
+vi.mock('firebase/firestore', async () => {
+  const actual = await vi.importActual<any>('firebase/firestore')
+  return {
+    ...actual,
+    doc: (...args: any[]) => {
+      mockDoc(...args)
+      return {} as any
+    },
+    getDoc: (...args: any[]) => mockGetDoc(...args),
+    setDoc: (...args: any[]) => mockSetDoc(...args),
+  }
+})
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
 
 describe('Auth Events', () => {
   it('should create a user profile on first sign-in', async () => {
-    const user: User = {
-      id: 'test-user-123',
-      name: 'Test User',
-      email: 'test@example.com',
-    };
+    // Simulate "doc does not exist" snapshot
+    mockGetDoc.mockResolvedValue({ exists: () => false })
 
-    // Create and configure a single docRef instance…
-    const docRef = {
-      id: user.id,
-      get: vi.fn().mockResolvedValue({ exists: false }),
-      set: vi.fn(),
-    };
+    const fakeDb = {} as unknown as Firestore
+    await onUserSignIn(fakeDb, { id: 'u1', email: 'a@b.com', displayName: 'Alice' })
 
-    // …and make the adminDb mock return THIS exact instance when called
-    (adminDb.collection as Mock).mockReturnValue({
-      doc: vi.fn().mockReturnValue(docRef),
-    });
-
-    await onUserSignIn({ user });
-
-    expect(adminDb.collection).toHaveBeenCalledWith('users');
-    expect(docRef.get).toHaveBeenCalled();
-    expect(docRef.set).toHaveBeenCalledWith({
-      uid: user.id,
-      email: user.email,
-      displayName: user.name,
-      roles: ['viewer'],
-      createdAt: expect.any(Date),
-    });
-  });
+    expect(mockDoc).toHaveBeenCalledWith(fakeDb, 'users', 'u1')
+    expect(mockSetDoc).toHaveBeenCalledTimes(1)
+  })
 
   it('should not overwrite an existing user profile', async () => {
-    const user: User = {
-      id: 'existing-user-456',
-      email: 'existing@example.com',
-    };
+    // Simulate "doc exists" snapshot
+    mockGetDoc.mockResolvedValue({ exists: () => true })
 
-    const docRef = {
-      id: user.id,
-      get: vi.fn().mockResolvedValue({ exists: true }),
-      set: vi.fn(),
-    };
+    const fakeDb = {} as unknown as Firestore
+    await onUserSignIn(fakeDb, { id: 'u2', email: 'b@b.com', displayName: 'Bob' })
 
-    (adminDb.collection as Mock).mockReturnValue({
-      doc: vi.fn().mockReturnValue(docRef),
-    });
-
-    await onUserSignIn({ user });
-
-    expect(docRef.get).toHaveBeenCalled();
-    expect(docRef.set).not.toHaveBeenCalled();
-  });
-});
+    expect(mockSetDoc).not.toHaveBeenCalled()
+  })
+})

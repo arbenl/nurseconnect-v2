@@ -1,14 +1,7 @@
-/**
- * Import function triggers from their respective sub-modules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
-
 import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
+import { onCall } from "firebase-functions/v2/https";
+import { log } from "./lib/logger";
 
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
@@ -18,7 +11,28 @@ export const helloWorld = onRequest((request, response) => {
   response.send("Hello from Firebase!");
 });
 
+export const createRequest = onCall((request) => {
+  const { patientId, location } = request.data;
+  const requestId = "some-random-uuid"; // In a real app, you'd generate a UUID
+
+  log.info(
+    {
+      requestId,
+      patientId,
+      location,
+      route: 'createRequest'
+    },
+    "New request created"
+  );
+
+  // ... rest of the function logic
+  
+  return {
+    success: true,
+    requestId,
+  };
+});
+
 // This is where you will add your core backend functions like:
-// exports.createRequest = ...
 // exports.assignNearestNurse = ...
 // exports.onUserCreate = ...

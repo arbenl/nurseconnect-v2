@@ -5,5 +5,10 @@
     "noEmit": true,
     "types": ["vitest/globals", "node"]
   },
-  "include": ["src", "test", "vitest-env.d.ts"]
+  "include": ["src", "test", "vitest-env.d.ts"],
+  "exclude": [
+    "test/emu/**",
+    "**/*.emu.test.ts",
+    "**/*.emu.test.tsx"
+  ]
 }

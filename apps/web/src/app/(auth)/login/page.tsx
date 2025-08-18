@@ -1,41 +1,50 @@
-'use client';
+import Link from "next/link"
 
-import { useState } from 'react';
-import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const router = useRouter();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    const result = await signIn('credentials', {
-      redirect: false,
-      email,
-      password,
-      isSignUp: 'false',
-    });
-    if (result?.error) {
-      setError('Invalid credentials. Please try again.');
-    } else if (result?.ok) {
-      router.push('/dashboard');
-    }
-  };
-
   return (
-    <div>
-      <h1>Login</h1>
-      <form onSubmit={handleSubmit}>
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" required />
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" required />
-        <button type="submit">Login</button>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-      </form>
-      <p>Don&apos;t have an account? <a href="/signup">Sign up</a></p>
-    </div>
-  );
+    <Card className="mx-auto max-w-sm">
+      <CardHeader>
+        <CardTitle className="text-2xl">Login</CardTitle>
+        <CardDescription>
+          Enter your email below to login to your account
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="m@example.com"
+              required
+            />
+          </div>
+          <div className="grid gap-2">
+            <div className="flex items-center">
+              <Label htmlFor="password">Password</Label>
+              <Link href="#" className="ml-auto inline-block text-sm underline">
+                Forgot your password?
+              </Link>
+            </div>
+            <Input id="password" type="password" required />
+          </div>
+          <Button type="submit" className="w-full">
+            Login
+          </Button>
+        </div>
+        <div className="mt-4 text-center text-sm">
+          Don&apos;t have an account?{' '}
+          <Link href="/signup" className="underline">
+            Sign up
+          </Link>
+        </div>
+      </CardContent>
+    </Card>
+  )
 }

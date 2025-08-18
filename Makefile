@@ -16,6 +16,8 @@ plan-all:
 	node scripts/agent-runner.mjs qa $(TASK)
 	node scripts/agent-runner.mjs security $(TASK)
 	node scripts/agent-runner.mjs ops $(TASK)
+	node scripts/agent-runner.mjs ux $(TASK)
+	node scripts/agent-runner.mjs perf $(TASK)
 
 apply:
 	@if [ -z "$(PLAN)" ]; then echo "Specify PLAN=output/<task>/<AGENT>.plan.json"; exit 1; fi
@@ -32,3 +34,18 @@ full-phase:
 	node scripts/apply-plan.mjs output/$(TASK)/OPS.plan.json
 	node scripts/apply-plan.mjs output/$(TASK)/QA.plan.json --dry-run
 	echo "✅ Full phase pipeline prepared."
+
+# Firebase Emulator Management
+.PHONY: emulators-start emulators-stop emulators-clean
+
+emulators-start:
+	@echo "Starting Firebase emulators..."
+	@firebase emulators:start --import=./emulator --export-on-exit
+
+emulators-stop:
+	@echo "Stopping Firebase emulators..."
+	@lsof -t -i:8080 -i:9099 -i:5001 | xargs kill -9
+
+emulators-clean:
+	@echo "Cleaning emulator data..."
+	@rm -rf ./emulator/firestore_v1
