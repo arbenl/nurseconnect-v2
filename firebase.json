@@ -1,11 +1,9 @@
 {
   "emulators": {
-    "auth": {
-      "port": 9098
-    },
-    "firestore": {
-      "port": 8081
-    },
+    "auth": { "host": "127.0.0.1", "port": 9098 },
+    "firestore": { "host": "127.0.0.1", "port": 8081 },
+    "hub": { "port": 4400 },
+    "logging": { "port": 4500 },
     "ui": {
       "enabled": true,
       "port": 4001

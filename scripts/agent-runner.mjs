@@ -33,12 +33,12 @@ if (!AGENT || !TASK) {
 }
 
 const AGENT_MAP = {
- dev: { context: 'prompts/context_dev.md', out: 'DEV.plan.json' },
-  qa: { context: 'prompts/context_qa.md', out: 'QA.plan.json' },
-  security: { context: 'prompts/context_security.md', out: 'SECURITY.plan.json' },
-  ops: { context: 'prompts/context_devops.md', out: 'OPS.plan.json' },
-  ux: { context: 'prompts/context_ux.md', out: 'UX.plan.json' },
-  perf: { context: 'prompts/context_perf.md', out: 'PERF.plan.json' },
+  dev: { context: 'context_dev.md', out: 'DEV.plan.json' },
+  qa: { context: 'context_qa.md', out: 'QA.plan.json' },
+  security: { context: 'context_security.md', out: 'SECURITY.plan.json' },
+  ops: { context: 'context_devops.md', out: 'OPS.plan.json' },
+  ux: { context: 'context_ux.md', out: 'UX.plan.json' },
+  perf: { context: 'context_perf.md', out: 'PERF.plan.json' },
 };
 
 if (!AGENT_MAP[AGENT]) {
@@ -55,6 +55,28 @@ if (!existsSync(contextFile)) {
 }
 
 const context = readFileSync(contextFile, "utf8");
+
+function loadTaskPrompt(task, agent) {
+  // Candidate order: specialized → nested → generic
+  const candidates = [
+    join('prompts', `${task}-${agent}.md`), // e.g. prompts/1-auth-roles-qa.md
+    join('prompts', task, `${agent}.md`),   // e.g. prompts/1-auth-roles/qa.md
+    join('prompts', `${task}.md`),          // fallback: prompts/1-auth-roles.md
+  ];
+
+  for (const p of candidates) {
+    if (existsSync(p)) {
+      const content = readFileSync(p, 'utf8');
+      console.log(`ℹ️  Using task prompt: ${p}`);
+      return content;
+    }
+  }
+
+  throw new Error(
+    `No prompt file found for task "${task}" (looked for: ${candidates.join(', ')})`
+  );
+}
+const taskPrompt = loadTaskPrompt(TASK, AGENT);
 
 // Strongly instruct JSON output (no markdown fences)
 const jsonEnvelope = `
@@ -130,28 +152,6 @@ function runOnce() {
   });
 }
 
-function loadTaskPrompt(task, agent) {
-  // Candidate order: specialized → nested → generic
-  const candidates = [
-    join('prompts', `${task}-${agent}.md`), // e.g. prompts/1-auth-roles-qa.md
-    join('prompts', task, `${agent}.md`),   // e.g. prompts/1-auth-roles/qa.md
-    join('prompts', `${task}.md`),          // fallback: prompts/1-auth-roles.md
-  ];
-
-  for (const p of candidates) {
-    if (existsSync(p)) {
-      const content = readFileSync(p, 'utf8');
-      console.log(`ℹ️  Using task prompt: ${p}`);
-      return content;
-    }
-  }
-
-  throw new Error(
-    `No prompt file found for task "${task}" (looked for: ${candidates.join(', ')})`
-  );
-}
-const taskPrompt = loadTaskPrompt(TASK, AGENT);
-
 function normalizeToJson(stdout) {
   if (!stdout) return null;
   let s = stdout.trim();
@@ -203,6 +203,29 @@ if (!normalized) {
   console.error("Trimmed stdout (first 2000 chars):\n");
   console.error((cli.stdout || "").slice(0, 2000));
   process.exit(cli.status || 2);
+}
+
+// Validate minimal JSON contract
+let parsed;
+try {
+  parsed = JSON.parse(normalized);
+} catch (e) {
+  console.error("Plan JSON is not parseable after normalization.");
+  process.exit(2);
+}
+if (!parsed || typeof parsed !== "object" || !parsed.agent || !parsed.task || !Array.isArray(parsed.actions)) {
+  console.error("Plan JSON missing required keys (agent, task, actions).");
+  const debugTo = join(outDir, `${AGENT.toUpperCase()}.invalid.json`);
+  writeFileSync(debugTo, normalized, "utf8");
+  console.error("Raw payload saved at:", debugTo);
+  process.exit(2);
+}
+if (parsed.actions.length === 0) {
+  console.error("Plan JSON has zero actions. Nothing to apply.");
+  const debugTo = join(outDir, `${AGENT.toUpperCase()}.empty.json`);
+  writeFileSync(debugTo, normalized, "utf8");
+  console.error("Raw payload saved at:", debugTo);
+  process.exit(2);
 }
 
 writeFileSync(outFile, normalized, "utf8");

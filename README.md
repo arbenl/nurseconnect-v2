@@ -63,3 +63,13 @@ bash
 # Run all auth-related tests against the live emulator
 firebase emulators:exec --only firestore,auth --project demo-nurseconnect "pnpm -w test:auth"
 
+
+
+## Phase 1: Auth & Roles Testing
+
+To run the integration tests for authentication and authorization, use the Firebase emulator.
+
+bash
+# Run all auth-related tests against the live emulator
+firebase emulators:exec --only firestore,auth --project demo-nurseconnect "pnpm -w test:auth"
+

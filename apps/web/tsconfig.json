@@ -7,30 +7,27 @@
         "src/*"
       ]
     },
+    "types": [
+      "node",
+      "vitest/globals"
+    ],
     "noEmit": true,
     "jsx": "preserve",
     "plugins": [
       {
         "name": "next"
       }
-    ],
-    "types": [
-      "node",
-      "vitest/globals"
     ]
   },
   "include": [
     ".next/types/**/*.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    "app/**/*",
-    "components/**/*",
+    "src/**/*",
     "next-env.d.ts",
     "next.config.*",
-    "pages/**/*",
-    "src/**/*",
-    "types/**/*",
-    "vitest-env.d.ts"
+    "vite.config.ts",
+    "vitest.setup.ts"
   ],
-  "exclude": ["**/*.test.ts", "**/*.test.tsx", "**/__tests__/**"]
+  "exclude": [
+    "**/*.e2e.*"
+  ]
 }
