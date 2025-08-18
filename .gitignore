@@ -68,3 +68,5 @@ nurseconnect_ecosystem_git/
 /output/
 /*.plan.json
 *.plan.md
+.env.test
+.turbo/
