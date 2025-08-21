@@ -61,7 +61,8 @@ describe("Auth + Profile Emulator Integration", () => {
   });
 
   it("should create and update Firestore profile document", async () => {
-    const profileRef = doc(db, "profiles", uid);
+    await signInWithEmailAndPassword(auth, "emuuser@example.com", "password123");
+    const profileRef = doc(db, "users", uid);
     await setDoc(profileRef, { name: "John Doe", role: "patient" });
 
     const snap = await getDoc(profileRef);

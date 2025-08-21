@@ -20,7 +20,7 @@
     "test:web": "pnpm --filter web test",
     "test:contracts": "pnpm --filter contracts test",
     "web:test:emu": "pnpm --filter web run test:emu",
-    "test:ci": "firebase emulators:exec --only firestore,auth --project demo-nurseconnect \"pnpm test:web && pnpm test:contracts && node apps/web/scripts/seedUser.js && pnpm web:test:emu\""
+    "test:ci": "pnpm test:web && pnpm test:contracts"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.4.6",
