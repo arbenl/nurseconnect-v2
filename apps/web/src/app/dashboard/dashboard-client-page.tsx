@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useSession } from 'next-auth/react';
-import { useUserProfile } from '@/hooks/use-user-profile';
+import { useSession } from "next-auth/react";
+import { useUserProfile } from "@/hooks/use-user-profile";
 
 export default function DashboardClientPage() {
   const { data: session } = useSession();
@@ -14,7 +14,9 @@ export default function DashboardClientPage() {
     <div className="p-8">
       <h1 className="text-2xl font-bold">Dashboard</h1>
       <p className="mt-4">Welcome, {user?.displayName || user?.email}!</p>
-      <p>Your assigned role is: <strong>{user?.roles.join(', ')}</strong></p>
+      <p>
+        Your assigned role is: <strong>{user?.roles.join(", ")}</strong>
+      </p>
       <div className="mt-6 p-4 bg-gray-50 rounded-md overflow-x-auto">
         <h3 className="font-semibold">User Details:</h3>
         <pre className="text-sm">{JSON.stringify(user, null, 2)}</pre>

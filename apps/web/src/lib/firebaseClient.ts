@@ -1,19 +1,23 @@
-// apps/web/src/lib/firebaseClient.ts
+// lib/firebaseClient.ts
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
+import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 
-const cfg = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
+const firebaseConfig = {
+  apiKey: "fake-api-key",
+  authDomain: "localhost",
+  projectId: "demo-nurseconnect",
 };
 
-export const firebaseApp = getApps().length ? getApp() : initializeApp(cfg);
-export const firebaseAuth = getAuth(firebaseApp);
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// 👇 Use the emulator in dev
-if (process.env.NEXT_PUBLIC_USE_EMULATORS === "true") {
-  connectAuthEmulator(firebaseAuth, "http://127.0.0.1:9099", { disableWarnings: true });
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Point to emulator when running locally
+if (process.env.NODE_ENV === 'development') {
+    connectAuthEmulator(auth, "http://127.0.0.1:9199");
+    connectFirestoreEmulator(db, "127.0.0.1", 8180);
 }
+
+export { app, auth, db };

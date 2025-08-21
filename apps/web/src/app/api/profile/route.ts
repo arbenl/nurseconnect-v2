@@ -1,9 +1,9 @@
 import { NextResponse, NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 // import { authOptions } from "@/app/api/auth/[...nextauth]/route"
-import { db } from "@/lib/firebase/admin";
+import { db } from "@/lib/firebase/db-admin";
 import { z } from "zod";
-import { isRole, type Role } from "@/types/role";
+import { isRole, type Role } from "../../../types/role";
 
 // --- minimal structured logging ---
 function log(ev: Record<string, unknown>) {
@@ -54,22 +54,27 @@ export async function GET(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for") ?? "local";
   if (!allowKey(`GET:${ip}`)) return deny(429, "Too Many Requests");
 
-  // const session = await getServerSession(authOptions)
   const session = await getServerSession();
   if (!session) return deny();
   const uid = getUidFromSession(session);
   if (!uid) return deny(403, "No user id on session");
 
-  const snap = await db.collection("users").doc(uid).get();
+  const userRef = db.collection("users").doc(uid);
+  const snap = await userRef.get();
+
   if (!snap.exists) {
     const shell = {
       id: uid,
       role: "patient" as Role,
       displayName: session.user?.name ?? "",
+      email: session.user?.email ?? "",
+      createdAt: new Date().toISOString(),
     };
-    log({ event: "profile_get_default", uid });
+    await userRef.set(shell);
+    log({ event: "profile_get_created", uid });
     return NextResponse.json(shell, { status: 200 });
   }
+
   const data = snap.data() || {};
   log({ event: "profile_get_ok", uid });
   return NextResponse.json({ id: uid, ...data }, { status: 200 });

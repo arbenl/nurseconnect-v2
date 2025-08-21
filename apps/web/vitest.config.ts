@@ -1,24 +1,22 @@
-import { defineConfig } from 'vitest/config'
-import tsconfigPaths from 'vite-tsconfig-paths'
+import { defineConfig } from 'vitest/config';
+import tsconfigPaths from 'vite-tsconfig-paths';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  plugins: [tsconfigPaths()],
+  plugins: [tsconfigPaths(), react()],
   test: {
-    environment: 'jsdom',
-    setupFiles: './vitest.setup.ts',
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
-    exclude: [
-      'node_modules',
-      'dist',
-      '.next',
-      '**/*.e2e.*',
-      // keep emulator tests out of default runs:
-      '../../packages/**/emulator.*.test.ts',
-      '../../packages/**/__tests__/**',
-    ],
     globals: true,
-    restoreMocks: true,
-    clearMocks: true,
-    mockReset: true,
+    environment: 'jsdom',
+    setupFiles: ['./vitest.setup.ts'],
+    exclude: [
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/.next/**',
+        '**/out/**',
+        '**/tests/emu/**',
+        '**/*.emu.test.ts',
+        '**/*.emu.test.tsx',
+        'src/**/emu/',
+    ],
   },
-})
+});

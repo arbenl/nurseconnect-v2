@@ -1,50 +1,35 @@
 // apps/web/src/lib/firebase/admin.ts
-import { cert, getApp, getApps, initializeApp, App } from 'firebase-admin/app';
-import { getAuth, Auth } from 'firebase-admin/auth';
-import { getFirestore, Firestore } from 'firebase-admin/firestore';
+import { type App, cert, getApp, getApps, initializeApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
 
-function parseServiceAccount() {
-  const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch (e) {
-    console.error('FIREBASE_SERVICE_ACCOUNT is not valid JSON:', e);
-    return null;
+// Detect emulator from env (either explicit flag, or emulator hosts present)
+const isEmulator =
+  process.env.NEXT_PUBLIC_USE_EMULATORS === 'true' ||
+  !!process.env.FIRESTORE_EMULATOR_HOST ||
+  !!process.env.FIREBASE_AUTH_EMULATOR_HOST;
+
+let app: App;
+
+if (!getApps().length) {
+  if (isEmulator) {
+    // Emulator: no credentials needed; projectId is enough
+    app = initializeApp({
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'demo-nurseconnect',
+    });
+  } else {
+    // Production: use service account (base64-encoded JSON in env)
+    const base64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON_BASE64;
+    if (!base64) {
+      throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON_BASE64 is not set for production environment.');
+    }
+    const serviceAccount = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));
+    app = initializeApp({ credential: cert(serviceAccount) });
   }
+} else {
+  app = getApp();
 }
 
-function createFirebaseAdminApp() {
-    if (getApps().length > 0) {
-        return getApp();
-    }
-
-    const usingEmulators =
-        !!process.env.FIREBASE_AUTH_EMULATOR_HOST || !!process.env.FIRESTORE_EMULATOR_HOST;
-
-    if (usingEmulators) {
-        return initializeApp({
-            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'demo-nurseconnect',
-        });
-    }
-
-    const sa = parseServiceAccount();
-    if (sa) {
-        return initializeApp({
-            credential: cert(sa as any),
-            projectId: sa.project_id,
-        });
-    }
-
-    return initializeApp();
-}
-
-// This is the key to preventing re-initialization in development
-declare global {
-  var __firebase_admin_app__: App | undefined;
-}
-
-const app = global.__firebase_admin_app__ || (global.__firebase_admin_app__ = createFirebaseAdminApp());
-
-export const adminAuth: Auth = getAuth(app);
-export const adminDb: Firestore = getFirestore(app);
+export const adminApp = app;
+export const adminAuth = getAuth(app);
+export const adminDb = getFirestore(app);

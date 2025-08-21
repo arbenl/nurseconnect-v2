@@ -1,13 +1,13 @@
-import { z } from 'zod';
+import { z } from "zod";
 
-export const Role = z.enum(['admin', 'nurse', 'staff']);
-export const UserId = z.string().min(1, 'uid required');
+export const Role = z.enum(["admin", "nurse", "staff"]);
+export const UserId = z.string().min(1, "uid required");
 
 export const UserProfile = z.object({
   uid: UserId,
   email: z.string().email(),
   displayName: z.string().min(1),
-  roles: z.array(Role).nonempty().default(['staff']),
+  roles: z.array(Role).nonempty().default(["staff"]),
   createdAt: z.string(), // ISO date
   updatedAt: z.string().optional(),
 });
