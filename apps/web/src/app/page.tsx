@@ -15,7 +15,8 @@ export default function HomePage() {
                   Empowering Healthcare Professionals
                 </h1>
                 <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
-                  NurseConnect provides a seamless platform for scheduling, communication, and patient management.
+                  NurseConnect provides a seamless platform for scheduling,
+                  communication, and patient management.
                 </p>
               </div>
               <div className="space-x-4">

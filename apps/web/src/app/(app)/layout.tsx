@@ -1,11 +1,11 @@
-import Link from "next/link"
-import { Home, Users, Calendar, Bell } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import Link from "next/link";
+import { Home, Users, Calendar, Bell } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -18,15 +18,24 @@ export default function DashboardLayout({
           </div>
           <div className="flex-1">
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-              <Link href="/dashboard" className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary">
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary"
+              >
                 <Home className="h-4 w-4" />
                 Dashboard
               </Link>
-              <Link href="#" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary">
+              <Link
+                href="#"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              >
                 <Calendar className="h-4 w-4" />
                 Schedule
               </Link>
-              <Link href="#" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary">
+              <Link
+                href="#"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              >
                 <Users className="h-4 w-4" />
                 Patients
               </Link>
@@ -50,19 +59,28 @@ export default function DashboardLayout({
       </div>
       {/* Mobile Bottom Nav */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 border-t bg-background p-2 flex justify-around">
-        <Link href="/dashboard" className="flex flex-col items-center text-primary">
+        <Link
+          href="/dashboard"
+          className="flex flex-col items-center text-primary"
+        >
           <Home className="h-6 w-6" />
           <span className="text-xs">Home</span>
         </Link>
-        <Link href="#" className="flex flex-col items-center text-muted-foreground">
+        <Link
+          href="#"
+          className="flex flex-col items-center text-muted-foreground"
+        >
           <Calendar className="h-6 w-6" />
           <span className="text-xs">Schedule</span>
         </Link>
-        <Link href="#" className="flex flex-col items-center text-muted-foreground">
+        <Link
+          href="#"
+          className="flex flex-col items-center text-muted-foreground"
+        >
           <Users className="h-6 w-6" />
           <span className="text-xs">Patients</span>
         </Link>
       </div>
     </div>
-  )
+  );
 }

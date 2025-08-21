@@ -20,13 +20,13 @@ export const createRequest = onCall((request) => {
       requestId,
       patientId,
       location,
-      route: 'createRequest'
+      route: "createRequest",
     },
-    "New request created"
+    "New request created",
   );
 
   // ... rest of the function logic
-  
+
   return {
     success: true,
     requestId,

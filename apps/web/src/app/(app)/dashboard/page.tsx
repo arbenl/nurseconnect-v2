@@ -1,4 +1,10 @@
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 
 export default function DashboardPage() {
   return (
@@ -7,7 +13,9 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Upcoming Shifts</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Upcoming Shifts
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">5</div>
